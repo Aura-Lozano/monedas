@@ -4,6 +4,8 @@ import Util
 import csv
 from functional import seq
 from datetime import datetime
+import matplotlib.pyplot as plt
+from functools import reduce
 
 #subrutinas
 def obtenerMonedas():
@@ -27,14 +29,14 @@ def obtenerDatos():
 
 
 def filtrarDatos(datos, moneda, desde, hasta):
-    return filter(lambda item: item["moneda"] == moneda \
+    return list(filter(lambda item: item["moneda"] == moneda \
                   and item["fecha"]>= desde \
-                  and item["fecha"]<= hasta, datos)
+                  and item["fecha"]<= hasta, datos))
 
 
 def extraerFechasYCambios(datos):
-    fechas = map(lambda item: item["fecha"], datos)
-    cambios = map(lambda item: item["cambio"], datos)
+    fechas = list(map(lambda item: item["fecha"], datos))
+    cambios = list(map(lambda item: item["cambio"], datos))
     return fechas, cambios
     
 def graficar():
@@ -44,20 +46,42 @@ def graficar():
     datos = obtenerDatos()
     datosFiltrados = filtrarDatos(datos, moneda, desde, hasta)
     fechas, cambios = extraerFechasYCambios(datosFiltrados)
-    for fecha in fechas:
-        print(fecha)
-    for cambio in cambios:
-        print(cambio)
 
+    #grafica
+    plt.plot(fechas,cambios)
+    plt.ylabel(f"Cambios de {moneda}")
+    plt.xlabel("Fecha")
+    plt.grid()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig("graficamonedas.png")
 
+    #mostrar la grafica en el panel
 
+    lblGrafica = Label(paneles[0])
+    imgGrafica = PhotoImage(file="graficamonedas.png")
+    lblGrafica.configure(image=imgGrafica)
+    lblGrafica.image=imgGrafica
+    lblGrafica.place(x=0,y=0)
 
-        
+    v.minsize(imgGrafica.width(), imgGrafica.height()+100)
 
-    
+def calcularPromedio(datos):
+    return reduce(lambda suma, item: suma+item, datos)/ len(datos) if datos else 0
+
+def calcularDesviacionEstandar(datos):
+    promedio = calcularPromedio(datos)
+    return reduce(lambda suma, item: suma+(item-promedio)**2, datos)/ len(datos) if datos else 0 
 
 def obtenerEstadisticas():
-    pass
+    moneda = monedas [cmbMoneda.current()] #nombre de la moneda escogida
+    desde = cldDesde.get_date()
+    hasta = cldHasta.get_date()
+    datos = obtenerDatos()
+    datosFiltrados = filtrarDatos(datos, moneda, desde, hasta)
+    cambios = list(map(lambda item: item["cambio"], datosFiltrados))
+    print(calcularPromedio(cambios))
+    print(calcularDesviacionEstandar(cambios))
 
 #Programa principal
 v = Tk()
@@ -91,4 +115,5 @@ paneles = []
 for texto in textos:
     panel = Frame(v)
     panelPestañas.add(panel, text=texto)
+    paneles.append(panel)
     
